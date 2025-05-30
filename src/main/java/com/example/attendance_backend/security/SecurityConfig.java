@@ -29,11 +29,11 @@ public class SecurityConfig {
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // 로그인/회원가입 열기
-                        .requestMatchers("/api/attendance/admin/**").hasRole("ADMIN") // 관리자용 API
-                        .requestMatchers("/api/subscribe").permitAll() // SSE는 인증 없이 접근 가능하게 (필요시 조정)
+                        .requestMatchers("/api/auth/**").permitAll()        // 로그인/회원가입 허용
+                        .requestMatchers("/api/attendance/admin/**").hasRole("ADMIN") // 관리자
+                        .requestMatchers("/api/subscribe").authenticated()  // SSE는 인증된 사용자만
                         .requestMatchers("/api/users").authenticated()
-                        .anyRequest().authenticated() // 나머지는 인증 필요
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

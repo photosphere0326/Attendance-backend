@@ -3,10 +3,12 @@ package com.example.attendance_backend.controller;
 import com.example.attendance_backend.dto.AttendanceMessageRequest;
 import com.example.attendance_backend.dto.AttendanceMessageResponse;
 import com.example.attendance_backend.service.AttendanceMessageService;
+import com.example.attendance_backend.sse.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -16,6 +18,7 @@ import java.util.List;
 public class AttendanceMessageController {
 
     private final AttendanceMessageService attendanceMessageService;
+    private final SseEmitterService sseEmitterService;
 
     // ✅ 쪽지 보내기
     @PostMapping
@@ -61,5 +64,12 @@ public class AttendanceMessageController {
         Long memberId = (Long) authentication.getPrincipal();
         attendanceMessageService.deleteMessage(messageId, memberId);
         return ResponseEntity.ok().build();
+    }
+
+    // ✅ SSE 구독 (실시간 알림 수신용)
+    @GetMapping("/subscribe")
+    public SseEmitter subscribe(Authentication authentication) {
+        Long memberId = (Long) authentication.getPrincipal();
+        return sseEmitterService.subscribe(memberId);
     }
 }

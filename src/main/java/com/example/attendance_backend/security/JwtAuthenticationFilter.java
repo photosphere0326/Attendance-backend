@@ -29,21 +29,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
+        String token = null;
+
+        // 1. Authorization 헤더에서 추출
         String authHeader = request.getHeader("Authorization");
-
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
+            token = authHeader.substring(7);
+        }
 
-            if (jwtTokenProvider.validateToken(token)) {
-                Long memberId = jwtTokenProvider.getMemberId(token);
-                String role = jwtTokenProvider.getRole(token);
-
-                if (role == null) {
-                    logger.warn("✅ Valid token but no role found");
-                    filterChain.doFilter(request, response);
-                    return;
+        // 2. 없으면 쿠키에서 추출
+        if (token == null && request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (cookie.getName().equals("token")) {
+                    token = cookie.getValue();
+                    break;
                 }
+            }
+        }
 
+        // 3. 토큰 유효성 검사
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            Long memberId = jwtTokenProvider.getMemberId(token);
+            String role = jwtTokenProvider.getRole(token);
+
+            if (role != null) {
                 List<SimpleGrantedAuthority> authorities = List.of(
                         new SimpleGrantedAuthority("ROLE_" + role)
                 );
@@ -56,10 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } else {
-                logger.warn("❌ Invalid or expired JWT token");
+                logger.warn("✅ Valid token but no role found");
             }
+        } else if (token != null) {
+            logger.warn("❌ Invalid or expired JWT token");
         }
 
         filterChain.doFilter(request, response);
-    }
-}
+    }}

@@ -61,15 +61,7 @@ public class AttendanceService {
                 .status(status)
                 .date(LocalDate.now())
                 .build();
-
-        // 본인에게 알림
         sseEmitterService.sendAttendanceUpdate(memberId, response);
-
-        // ✅ 관리자에게 출석 알림 메시지 전송
-        List<Member> admins = memberRepository.findByRole(Role.ADMIN);
-        for (Member admin : admins) {
-            sseEmitterService.send(admin.getId(), "[알림] " + member.getName() + "님이 출석했습니다.");
-        }
     }
 
     // ✅ 날짜별 출석 조회

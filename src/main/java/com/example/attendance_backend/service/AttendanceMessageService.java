@@ -42,9 +42,14 @@ public class AttendanceMessageService {
 
         attendanceMessageRepository.save(message);
 
-        // SSE 알림 전송
-        String alarmMessage = String.format("%s님으로부터 새로운 쪽지가 도착했습니다.", sender.getName());
-        sseEmitterService.send(receiver.getId(), alarmMessage);
+        // ✅ 메시지 ID와 알림 메시지 포함하여 SSE 전송
+        String preview = request.getContent().length() > 30
+                ? request.getContent().substring(0, 30) + "..."
+                : request.getContent();
+
+        String fullMessage = sender.getName() + "님이 메시지를 보냈습니다: " + preview;
+
+        sseEmitterService.sendMessageNotification(receiver.getId(), message.getId(), fullMessage);
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +81,6 @@ public class AttendanceMessageService {
             throw new IllegalStateException("이 쪽지를 조회할 권한이 없습니다.");
         }
 
-        // 수신자가 읽은 경우 상태 변경
         if (message.getReceiver().getId().equals(memberId) && message.getStatus() == MessageStatus.UNREAD) {
             message.markAsRead();
         }
