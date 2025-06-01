@@ -35,11 +35,9 @@ public class AttendanceMessage {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MessageStatus status;
+    @Builder.Default
+    private MessageStatus status = MessageStatus.UNREAD;
 
-    public void read() {
-        this.status = MessageStatus.READ;
-    }
     public void markAsRead() {
         this.status = MessageStatus.READ;
     }

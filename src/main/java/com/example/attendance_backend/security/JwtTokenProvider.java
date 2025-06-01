@@ -22,31 +22,34 @@ public class JwtTokenProvider {
         this.expirationTime = expirationTime;
     }
 
-    // ✅ name 인자 추가
+    // ✅ 토큰 생성
     public String generateToken(Long memberId, String role, String name) {
         return Jwts.builder()
-                .setSubject(String.valueOf(memberId))
-                .claim("role", role)
-                .claim("name", name) // ✅ 올바르게 추가됨
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .setSubject(String.valueOf(memberId))     // 사용자 ID
+                .claim("role", role)                      // 역할: STUDENT / ADMIN
+                .claim("name", name)                      // 이름 (optional)
+                .setIssuedAt(new Date())                  // 발급 시각
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime)) // 만료 시각
+                .signWith(secretKey, SignatureAlgorithm.HS256) // 서명
                 .compact();
     }
 
+    // ✅ 사용자 ID 조회
     public Long getMemberId(String token) {
         return Long.parseLong(getClaims(token).getSubject());
     }
 
+    // ✅ 역할(role) 조회
     public String getRole(String token) {
         return getClaims(token).get("role", String.class);
     }
 
-    // ✅ 이름 클레임 조회용 메서드 추가하고 싶다면
+    // ✅ 이름(name) 조회 (선택)
     public String getName(String token) {
         return getClaims(token).get("name", String.class);
     }
 
+    // ✅ 토큰 유효성 검사
     public boolean validateToken(String token) {
         try {
             getClaims(token);
@@ -56,6 +59,7 @@ public class JwtTokenProvider {
         }
     }
 
+    // ✅ 내부용: Claim 파싱
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)

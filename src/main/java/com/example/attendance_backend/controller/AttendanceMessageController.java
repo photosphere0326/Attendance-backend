@@ -72,4 +72,14 @@ public class AttendanceMessageController {
         Long memberId = (Long) authentication.getPrincipal();
         return sseEmitterService.subscribe(memberId);
     }
+    // ✅ 쪽지 읽음 처리
+    @PatchMapping("/{messageId}/read")
+    public ResponseEntity<Void> markAsRead(
+            @PathVariable Long messageId,
+            Authentication authentication
+    ) {
+        Long memberId = (Long) authentication.getPrincipal();
+        attendanceMessageService.markAsRead(messageId, memberId);
+        return ResponseEntity.ok().build();
+    }
 }

@@ -2,6 +2,7 @@ package com.example.attendance_backend.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -29,47 +30,53 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String token = null;
+        try {
+            String token = extractToken(request);
 
-        // 1. Authorization 헤더에서 추출
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
+            if (token != null && jwtTokenProvider.validateToken(token)) {
+                Long memberId = jwtTokenProvider.getMemberId(token);
+                String role = jwtTokenProvider.getRole(token); // "ADMIN" or "STUDENT"
+
+                if (role != null && !role.isBlank()) {
+                    // Spring Security expects ROLE_ prefix
+                    String springRole = "ROLE_" + role.toUpperCase();
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(springRole);
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(memberId, null, List.of(authority));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    logger.debug("✅ 인증 성공 - memberId: {}, role: {}", memberId, springRole);
+                } else {
+                    logger.warn("⚠️ 유효한 토큰이나 role 정보 없음");
+                }
+            } else if (token != null) {
+                logger.warn("❌ 유효하지 않거나 만료된 JWT 토큰");
+            }
+        } catch (Exception e) {
+            logger.error("❗ 필터 처리 중 예외 발생", e);
         }
 
-        // 2. 없으면 쿠키에서 추출
-        if (token == null && request.getCookies() != null) {
-            for (var cookie : request.getCookies()) {
-                if (cookie.getName().equals("token")) {
-                    token = cookie.getValue();
-                    break;
+        filterChain.doFilter(request, response);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        // 1. Authorization 헤더에서 Bearer 토큰 추출
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        // 2. 쿠키에서 token 추출
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("token".equals(cookie.getName())) {
+                    return cookie.getValue();
                 }
             }
         }
 
-        // 3. 토큰 유효성 검사
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            Long memberId = jwtTokenProvider.getMemberId(token);
-            String role = jwtTokenProvider.getRole(token);
-
-            if (role != null) {
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + role)
-                );
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(memberId, null, authorities);
-                authentication.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            } else {
-                logger.warn("✅ Valid token but no role found");
-            }
-        } else if (token != null) {
-            logger.warn("❌ Invalid or expired JWT token");
-        }
-
-        filterChain.doFilter(request, response);
-    }}
+        return null;
+    }
+}

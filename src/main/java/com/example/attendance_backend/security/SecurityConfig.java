@@ -13,6 +13,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -24,15 +29,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configure(http))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()        // 로그인/회원가입 허용
-                        .requestMatchers("/api/attendance/admin/**").hasRole("ADMIN") // 관리자
-                        .requestMatchers("/api/subscribe").authenticated()  // SSE는 인증된 사용자만
-                        .requestMatchers("/api/users").authenticated()
+                        // 로그인, 회원가입은 공개
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // 관리자: ROLE_ADMIN
+                        .requestMatchers("/api/attendance/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // 학생: ROLE_STUDENT
+                        .requestMatchers("/api/attendance/**").hasAuthority("ROLE_STUDENT")
+
+                        // 공통 기능 (로그인만 필요)
+                        .requestMatchers("/api/messages/**", "/api/subscribe", "/api/users").authenticated()
+
+                        // 기타 요청
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -41,8 +55,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // 비밀번호 암호화
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

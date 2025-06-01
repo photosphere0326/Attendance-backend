@@ -13,6 +13,7 @@ public class AttendanceMessageResponse {
     private String senderName;
     private Long receiverId;
     private String content;
+    private String receiverName;
     private String attachmentUrl;
     private String createdAt; // ISO-8601 문자열
     private MessageStatus status; // ✅ 메시지 상태 추가됨
@@ -23,6 +24,7 @@ public class AttendanceMessageResponse {
                 .senderId(msg.getSender().getId())
                 .senderName(msg.getSender().getName())
                 .receiverId(msg.getReceiver().getId())
+                .receiverName(msg.getReceiver().getName())
                 .content(msg.getContent())
                 .attachmentUrl(msg.getAttachmentUrl())
                 .createdAt(msg.getCreatedAt().toString())

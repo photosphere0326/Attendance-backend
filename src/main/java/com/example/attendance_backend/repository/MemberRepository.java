@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByEmail(String email); // ✅ 단건 조회
     List<Member> findByRole(Role role);         // ✅ 관리자 목록용
+    List<Member> findAllByRole(Role role);
 }

@@ -42,7 +42,6 @@ public class AttendanceMessageService {
 
         attendanceMessageRepository.save(message);
 
-        // ✅ 메시지 ID와 알림 메시지 포함하여 SSE 전송
         String preview = request.getContent().length() > 30
                 ? request.getContent().substring(0, 30) + "..."
                 : request.getContent();
@@ -86,6 +85,20 @@ public class AttendanceMessageService {
         }
 
         return AttendanceMessageResponse.fromEntity(message);
+    }
+
+    @Transactional
+    public void markAsRead(Long messageId, Long memberId) {
+        AttendanceMessage message = attendanceMessageRepository.findById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 쪽지입니다."));
+
+        if (!message.getReceiver().getId().equals(memberId)) {
+            throw new IllegalStateException("본인에게 온 쪽지만 읽음 처리할 수 있습니다.");
+        }
+
+        if (message.getStatus() == MessageStatus.UNREAD) {
+            message.markAsRead();
+        }
     }
 
     @Transactional

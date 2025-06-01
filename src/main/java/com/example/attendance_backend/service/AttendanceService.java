@@ -5,6 +5,7 @@ import com.example.attendance_backend.dto.AttendanceResponse;
 import com.example.attendance_backend.dto.AttendanceUpdateRequest;
 import com.example.attendance_backend.repository.AttendanceRepository;
 import com.example.attendance_backend.repository.MemberRepository;
+import com.example.attendance_backend.dto.MemberSimpleDto;
 import com.example.attendance_backend.sse.SseEmitterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -82,6 +83,11 @@ public class AttendanceService {
                 .build();
     }
 
+    public List<MemberSimpleDto> getAllStudents() {
+        return memberRepository.findAllByRole(Role.STUDENT).stream()
+                .map(m -> new MemberSimpleDto(m.getId(), m.getName()))
+                .toList();
+    }
     // ✅ 월별 출석 조회
     public List<AttendanceResponse> getMonthlyStatus(Long memberId, int year, int month) {
         Member member = memberRepository.findById(memberId)

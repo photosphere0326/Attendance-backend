@@ -38,8 +38,9 @@ public class SseEmitterService {
         if (emitter != null) {
             try {
                 // 프론트에서 JSON.parse() 하기 좋게 포맷
-                String payload = String.format("{\"id\":%d,\"message\":\"%s\"}",
+                String payload = String.format("{\"id\":%d,\"title\":\"%s\",\"message\":\"%s\"}",
                         messageId,
+                        "쪽지 도착",
                         (content.length() > 30 ? content.substring(0, 30) + "..." : content).replace("\"", "\\\"")
                 );
 
